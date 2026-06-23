@@ -34,4 +34,21 @@ Ninguno (suite bats es issue #8). Verificación manual:
 
 ## Correcciones tras review
 
-N/A — fase implement.
+**Review Claude** (`progress/20260623T202557-claude-review.json`): veredicto `approve`, `bloqueantes: []`. Sin review Codex en esta sesión.
+
+### Bloqueantes atendidos
+
+Ninguno — la review no reportó puntos bloqueantes ni críticos.
+
+### Sugerencias (no implementadas)
+
+| Sugerencia | Motivo |
+|------------|--------|
+| Confirmar `./init.sh` y dry-run localmente | Verificado en fase fix: ambos pasan. |
+| Tests automatizados nuevos | Fuera de scope; suite bats es issue #8. |
+| Ejemplo mínimo rellenado en `TEMPLATE.md` | Opcional; `issue-9.md` e `issue-14.md` sirven de referencia. |
+
+### Verificaciones
+
+- `./init.sh` — OK
+- `bash pr-loop.sh issue-9 --dry-run` — OK
