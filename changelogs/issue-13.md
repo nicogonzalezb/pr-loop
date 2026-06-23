@@ -45,3 +45,16 @@ Ninguno (suite bats es issue #8). Verificación manual:
 - **`.pr-loop.env` versionado** en el canónico como overlay de dogfooding; `install` no lo pisa si existe.
 - **Infra pendiente** (#6–#12): CLI headless, CI, bats, changelogs template, cleanup, history, prompts-local — fuera de scope de #13.
 - **`init.sh` en worktree:** requiere `bash pr-loop.sh install` previo para `.worktrees/` local (mismo patrón que #14).
+
+## Correcciones tras review
+
+Review Claude (`20260623T202555-claude-review.json`): **veredicto approve**, **0 bloqueantes**.
+
+No hubo review Codex para esta sesión (`20260623T202555-codex-review.md` ausente).
+
+Sugerencias de bajo riesgo aplicadas:
+
+- README: aclarado que `./init.sh` sin `install` previo falla en el chequeo de `.worktrees/`.
+- Enlace a issue [#7](https://github.com/nicogonzalezb/pr-loop/issues/7) (CI) como validación automática de `init.sh` tras merge.
+
+Verificación: `./init.sh` pasa en worktree `issue-13`.
