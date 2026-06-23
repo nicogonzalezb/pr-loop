@@ -17,7 +17,7 @@ El pipeline **nunca** mergea solo. El merge lo hace un humano.
 
 ## Dogfooding (automejora en este repo)
 
-Este repositorio puede ejecutar el pipeline sobre sus propios issues abiertos. La capa mínima ya está en la raíz:
+Este repositorio puede ejecutar el pipeline sobre sus propios issues abiertos. La capa base (#13) está versionada en `main`:
 
 | Archivo | Rol |
 |---------|-----|
@@ -26,7 +26,9 @@ Este repositorio puede ejecutar el pipeline sobre sus propios issues abiertos. L
 | `CLAUDE.md` | Convenciones para implementador y reviewer |
 | `issues/CONTRATO.md` | Spec del formato de issues |
 | `issues/TEMPLATE.md` | Plantilla para `gh issue create` |
-| `issues/orden-de-trabajo.md` | Orden recomendado y bloqueos (#3, #4) |
+| `issues/orden-de-trabajo.md` | Orden recomendado, infra dogfooding (#6–#12) y bloqueos (#3, #4) |
+
+**Prerequisito:** `bash pr-loop.sh install` (crea `.worktrees/` y `progress/`). Luego `./init.sh` debe pasar.
 
 **Orden sugerido** (ver el doc para detalle):
 

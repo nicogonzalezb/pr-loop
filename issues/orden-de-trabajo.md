@@ -12,11 +12,11 @@ Sin #14, cada repo improvisa issues y el inner loop pierde atomicidad y reproduc
 
 ## Infraestructura dogfooding (antes o en paralelo a features)
 
-Piezas que faltaban para usar este repo como target del inner loop. Ver issue #13 para la capa base ya escrita localmente.
+Capa base mergeada en `main` (#13). Pendientes de infra para corridas reales y CI:
 
 | Orden | Issue | Título | Notas |
 |-------|-------|--------|-------|
-| 0 | #13 | Formalizar capa base (CLAUDE.md, init.sh, …) | Merge del PR pendiente |
+| ✅ | #13 | Formalizar capa base (CLAUDE.md, init.sh, …) | Mergeado — `CLAUDE.md`, `init.sh`, `.pr-loop.env`, `install`, worktree obligatorio |
 | — | #6 | `.cursor/cli.json` headless | Prerequisito para corridas reales sin prompts |
 | — | #7 | CI GitHub Actions (`init.sh`) | Verde en PRs de dogfooding |
 | — | #8 | Suite bats | Tests de scripts |
