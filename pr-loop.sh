@@ -13,6 +13,8 @@
 #
 # Uso:
 #   bash pr-loop.sh install            # preparar proyecto (git worktree, .gitignore)
+#   bash pr-loop.sh cleanup list       # listar worktrees locales
+#   bash pr-loop.sh cleanup issue-35 --yes
 #   bash pr-loop.sh issue-35
 #   bash pr-loop.sh --pr 57
 #   bash pr-loop.sh --pr 57 --from review-claude
@@ -67,6 +69,7 @@ SELF_HEAL=1
 while [ $# -gt 0 ]; do
   case "$1" in
     install)        bash "$SCRIPTS_DIR/install.sh"; exit $?;;
+    cleanup)        shift; bash "$SCRIPTS_DIR/cleanup.sh" "$@"; exit $?;;
     --pr)           PR="${2:?--pr requiere número}"; shift 2;;
     --from)         FROM="${2:?--from requiere fase}"; shift 2;;
     --dry-run)      DRY_RUN=1; shift;;
