@@ -14,7 +14,16 @@ Este repositorio es el **núcleo canónico** del pipeline PR multi-agente. Los a
 
 ## Arquitectura (big picture)
 
-`pr-loop.sh` es un **orquestador secuencial de fases**. Entender el flujo requiere leer el orquestador junto con `scripts/state.sh` y los wrappers de fase.
+Sistema de **dos loops**:
+
+| Loop | Entrypoint | Rol |
+|------|------------|-----|
+| **Outer** | `plan-loop.sh` | Épico → propuesta de sub-issues → (OK humano) → `gh issue create` |
+| **Inner** | `pr-loop.sh` | Issue atómico → implement → PR → reviews → gate |
+
+`plan-loop.sh` es el **outer loop / planner**. Ancla en un doc de arquitectura (`PLAN_ARCH_DOC`, `ARCHITECTURE.md` o `CLAUDE.md`), propone issues atómicos según `issues/CONTRATO.md`, y **nunca crea issues sin aprobación explícita** del humano.
+
+`pr-loop.sh` es el **inner loop** — orquestador secuencial de fases. Entender el flujo requiere leer el orquestador junto con `scripts/state.sh` y los wrappers de fase.
 
 **Cadena de fases** (array `PHASES` en `pr-loop.sh`):
 
@@ -51,11 +60,14 @@ worktree → implement → pr → review-claude → fix → review-codex → gat
 
 | Ruta | Rol |
 |------|-----|
-| `pr-loop.sh` | Orquestador; punto de entrada y máquina de fases |
+| `plan-loop.sh` | Outer loop / planner (descomponer épicos) |
+| `pr-loop.sh` | Orquestador inner loop; punto de entrada y máquina de fases |
+| `scripts/plan_{propose,validate,create,render}.sh` | Wrappers del outer loop |
 | `scripts/state.sh` | Estado en `progress/current.json` (sub-objeto `pr_loop`) |
 | `scripts/render_prompt.sh` | Sustituye placeholders `{{ISSUE}}`/`{{PR}}`/`{{SESSION}}`/`{{REVIEWS}}` |
 | `scripts/check_order.sh` | Warning de orden de issues (opcional, sourced) |
 | `scripts/{cursor_implement,claude_review,codex_review,gate_merge,self_heal,worktree,install}.sh` | Wrappers de fase + git worktree + install |
+| `prompts/decompose-epic.md` | Prompt del planner (outer loop) |
 | `prompts/` | Prompts versionados con placeholders |
 | `init.sh` | Health check del proyecto (sourced vía `INIT_SCRIPT`) |
 | `.pr-loop.env` | Config del proyecto sourced por `pr-loop.sh` (modelos, rama base, `INIT_SCRIPT`) |

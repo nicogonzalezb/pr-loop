@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "epic": 1,
+  "atomic": false,
+  "atomic_reason": "",
+  "assumptions": [],
+  "sub_issues": [
+    {
+      "title": "feat: sin secciones obligatorias",
+      "body": "Body incompleto sin contrato.",
+      "assumptions": []
+    }
+  ]
+}

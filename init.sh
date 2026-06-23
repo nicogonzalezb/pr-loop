@@ -45,6 +45,21 @@ else
   fail "pr-loop.sh --dry-run"
 fi
 
+if bash "$REPO_ROOT/plan-loop.sh" 5 --dry-run &>/dev/null; then
+  ok "plan-loop.sh --dry-run"
+else
+  fail "plan-loop.sh --dry-run"
+fi
+
+# 4b. Tests del outer loop (plan-loop)
+if [ -x "$REPO_ROOT/tests/plan/test_plan.sh" ]; then
+  if bash "$REPO_ROOT/tests/plan/test_plan.sh" &>/dev/null; then
+    ok "tests/plan/test_plan.sh"
+  else
+    fail "tests/plan/test_plan.sh"
+  fi
+fi
+
 # 5. Archivos clave del dogfooding
 for f in CLAUDE.md issues/CONTRATO.md issues/TEMPLATE.md issues/orden-de-trabajo.md; do
   [ -f "$REPO_ROOT/$f" ] && ok "$f existe" || fail "$f falta"
