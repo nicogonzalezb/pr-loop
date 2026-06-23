@@ -17,6 +17,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 : "${REPO_ROOT:=$(cd "$SCRIPT_DIR/.." && pwd)}"
 source "$SCRIPT_DIR/render_prompt.sh"
+# shellcheck source=scripts/state.sh
+source "$SCRIPT_DIR/state.sh"
+# shellcheck source=scripts/budget.sh
+source "$SCRIPT_DIR/budget.sh"
 
 WORKTREE="${1:?worktree_dir requerido}"
 PR_NUM="${2:?pr_num requerido}"
@@ -41,6 +45,8 @@ fi
 PROMPT="$(render_prompt review-claude.md "" "$PR_NUM" "$SESSION" "$WORKTREE_JSON")"
 
 echo "→ [claude] claude -p --model $CLAUDE_MODEL  (PR #$PR_NUM, out: $OUT_JSON)"
+
+budget_guard
 
 if [ "${PR_LOOP_DRY_RUN:-0}" = "1" ]; then
   echo "  [dry-run] no se ejecuta la review. Prompt:"
@@ -136,5 +142,8 @@ if ! is_valid_review_json "$OUT_JSON"; then
   echo "  Revisa $RAW_JSON (permission_denials / .result)." >&2
   exit 1
 fi
+
+budget_record_from_raw "$RAW_JSON" "${BUDGET_PHASE:-review-claude}"
+budget_abort_if_exceeded
 
 echo "✓ Review Claude escrita en $OUT_JSON"

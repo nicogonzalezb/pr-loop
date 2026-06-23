@@ -14,6 +14,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 PROMPTS_DIR="${PROMPTS_DIR:-$REPO_ROOT/prompts}"
 PROGRESS_DIR="$REPO_ROOT/progress"
+# shellcheck source=scripts/state.sh
+source "$SCRIPT_DIR/state.sh"
+# shellcheck source=scripts/budget.sh
+source "$SCRIPT_DIR/budget.sh"
 
 # ── Argumentos ───────────────────────────────────────────────────────
 CLAUDE_JSON="${1:?self_heal.sh requiere <claude_json> como primer argumento}"
@@ -108,11 +112,19 @@ fi
 echo "  Llamando a claude -p ($MODEL) para analizar fallos y mejorar prompt..."
 mkdir -p "$PROGRESS_DIR"
 
-if ! echo "$HEAL_PROMPT" | claude -p --model "$MODEL" > "$HEALED_OUTPUT" 2>&1; then
+budget_guard
+
+RAW_JSON="$PROGRESS_DIR/${SESSION_ID}-self-heal.raw.json"
+if ! echo "$HEAL_PROMPT" | claude -p --model "$MODEL" --output-format json > "$RAW_JSON" 2>&1; then
   echo "⚠  self_heal: claude -p falló — se conserva el prompt original." >&2
-  rm -f "$HEALED_OUTPUT"
+  rm -f "$RAW_JSON"
   exit 0
 fi
+
+jq -r '.result // empty' "$RAW_JSON" > "$HEALED_OUTPUT"
+
+budget_record_from_raw "$RAW_JSON" "self-heal"
+budget_abort_if_exceeded
 
 if [ ! -s "$HEALED_OUTPUT" ]; then
   echo "⚠  self_heal: claude -p devolvió respuesta vacía — se conserva el prompt original." >&2

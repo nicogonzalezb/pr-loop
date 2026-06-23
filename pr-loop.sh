@@ -34,6 +34,8 @@
 #   CURSOR_MODEL       Modelo de implement/fix (default: composer-2.5).
 #   CLAUDE_MODEL       Modelo de review Claude (default: opus).
 #   CLAUDE_ALLOWED_TOOLS  Herramientas permitidas a claude -p (ver claude_review.sh).
+#   PR_LOOP_MAX_USD       Tope de gasto USD por corrida (claude -p).
+#   PR_LOOP_MAX_TOKENS    Tope de tokens (input+output) por corrida (claude -p).
 #   PR_LOOP_DRY_RUN   Si es "1", equivale a --dry-run.
 set -euo pipefail
 
@@ -53,6 +55,7 @@ fi
 export REPO_ROOT PROMPTS_DIR="${PROMPTS_DIR:-$REPO_ROOT/prompts}"
 
 source "$SCRIPTS_DIR/state.sh"
+source "$SCRIPTS_DIR/budget.sh"
 source "$SCRIPTS_DIR/check_order.sh"
 
 # ── Parseo de argumentos ─────────────────────────────────────────────
@@ -254,9 +257,17 @@ phase_pr() {
 phase_review_claude() {
   echo "=== Fase 4: Review Claude (claude -p / Opus) ==="
   state_set_fase "review-claude"
+  budget_guard
   CLAUDE_JSON="$PROGRESS_DIR/${SESSION_ID}-claude-review.json"
-  if bash "$SCRIPTS_DIR/claude_review.sh" \
-    "$WORKTREE" "${PR:-0}" "$SESSION_ID" "$CLAUDE_JSON"; then
+  export BUDGET_PHASE="review-claude"
+  set +e
+  bash "$SCRIPTS_DIR/claude_review.sh" \
+    "$WORKTREE" "${PR:-0}" "$SESSION_ID" "$CLAUDE_JSON"
+  local rc=$?
+  set -e
+  if [ "$rc" -eq 2 ]; then
+    exit 2
+  elif [ "$rc" -eq 0 ]; then
     [ "$DRY_RUN" = "1" ] || state_set_review claude "$CLAUDE_JSON"
   else
     echo "❌ Review Claude falló; no se avanza con review vacía." >&2
@@ -306,8 +317,16 @@ phase_fix() {
     # 4. Re-review con Claude (nuevo JSON numerado por intento)
     local re_review_json="$PROGRESS_DIR/${SESSION_ID}-claude-review-fix-${intento}.json"
     echo "  → Re-review Claude (intento $intento) → $re_review_json"
-    if bash "$SCRIPTS_DIR/claude_review.sh" \
-        "$WORKTREE" "${PR:-0}" "$SESSION_ID" "$re_review_json"; then
+    budget_guard
+    export BUDGET_PHASE="review-claude-fix-${intento}"
+    set +e
+    bash "$SCRIPTS_DIR/claude_review.sh" \
+        "$WORKTREE" "${PR:-0}" "$SESSION_ID" "$re_review_json"
+    local rc=$?
+    set -e
+    if [ "$rc" -eq 2 ]; then
+      exit 2
+    elif [ "$rc" -eq 0 ]; then
       # 5. Actualizar CLAUDE_JSON al nuevo archivo
       CLAUDE_JSON="$re_review_json"
       [ "$DRY_RUN" = "1" ] || state_set_review claude "$CLAUDE_JSON"
@@ -397,6 +416,9 @@ main() {
   echo "  Dry-run:  $([ "$DRY_RUN" = 1 ] && echo sí || echo no)"
   echo "  Max-fix:  $MAX_FIX"
   echo "  Self-heal: $([ "$SELF_HEAL" = 1 ] && echo activado || echo desactivado)"
+  if budget_caps_configured; then
+    echo "  Presupuesto: max_usd=${PR_LOOP_MAX_USD:-—} max_tokens=${PR_LOOP_MAX_TOKENS:-—}"
+  fi
   echo ""
 
   SESSION_ID="${SESSION_ID:-$(date -u +%Y%m%dT%H%M%S)}"
@@ -413,9 +435,15 @@ main() {
   # Self-healing: si el fix se agotó con bloqueantes pendientes, intentar
   # mejorar automáticamente el prompt fix-from-reviews.md para futuras ejecuciones.
   if [ "$SELF_HEAL" = "1" ] && [ "${FIX_EXITOSO:-0}" = "1" ] && should_run fix; then
+    set +e
     bash "$SCRIPTS_DIR/self_heal.sh" \
       "${CLAUDE_JSON:-$PROGRESS_DIR/${SESSION_ID}-claude-review.json}" \
-      "$ISSUE" "$SESSION_ID" || true
+      "$ISSUE" "$SESSION_ID"
+    local heal_rc=$?
+    set -e
+    if [ "$heal_rc" -eq 2 ]; then
+      exit 2
+    fi
   fi
 
   should_run review-codex  && phase_review_codex
@@ -426,7 +454,11 @@ main() {
   fi
 
   echo ""
-  if [ "${FIX_EXITOSO:-0}" = "1" ]; then
+  if [ "$(state_get fase 2>/dev/null || true)" = "budget-exceeded" ]; then
+    echo "⚠ Pipeline abortado: presupuesto de corrida agotado."
+    echo "  Gasto acumulado: $(budget_summary_line)"
+    exit 2
+  elif [ "${FIX_EXITOSO:-0}" = "1" ]; then
     echo "⚠ Pipeline completado: se agotaron los $MAX_FIX intentos de fix con bloqueantes pendientes."
     echo "  Considera revisar manualmente o ejecutar --from fix con --max-fix mayor."
     if [ "$SELF_HEAL" = "1" ]; then

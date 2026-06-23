@@ -38,6 +38,13 @@ else
   echo "  (shellcheck no instalado — omitido)"
 fi
 
+# 3b. Tests de presupuesto (issue #1)
+if bash "$REPO_ROOT/scripts/test_budget.sh" &>/dev/null; then
+  ok "test_budget.sh"
+else
+  fail "test_budget.sh"
+fi
+
 # 4. Dry-run del orquestador (preflight sin agentes)
 if bash "$REPO_ROOT/pr-loop.sh" issue-1 --dry-run &>/dev/null; then
   ok "pr-loop.sh --dry-run"
