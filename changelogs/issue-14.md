@@ -37,3 +37,14 @@ Ninguno (suite bats es issue #8). Verificación manual:
 - **Skill fuera del repo:** vive en `~/.cursor/skills/` como skill personal global; el contrato versionado está en el canónico.
 - **`orden-de-trabajo.md`:** ya listaba #14 como P0; sin cambios adicionales.
 - **init.sh en worktree:** requiere `bash pr-loop.sh install` previo para crear `.worktrees/` local.
+
+## Correcciones tras review
+
+**Review Claude** (`20260623T195656-claude-review.json`): veredicto `approve`, **0 bloqueantes**. Review Codex: no generada en esta sesión.
+
+| Punto | Acción |
+|-------|--------|
+| Bloqueantes | Ninguno — PR ya cumple criterios de aceptación del issue #14. |
+| `install.sh` sin aviso si falta fuente de CONTRATO/TEMPLATE | Añadido `note` de advertencia cuando ni el proyecto ni el core tienen el archivo. |
+| Comentario de cabecera de `install.sh` desactualizado | Actualizado para mencionar scaffold de `issues/`. |
+| `./init.sh` pendiente por sandbox del revisor | Ejecutado localmente: pasa (bash, sintaxis, dry-run, archivos clave). |
