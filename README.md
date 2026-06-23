@@ -28,7 +28,7 @@ Este repositorio puede ejecutar el pipeline sobre sus propios issues abiertos. L
 | `issues/TEMPLATE.md` | Plantilla para `gh issue create` |
 | `issues/orden-de-trabajo.md` | Orden recomendado, infra dogfooding (#6–#12) y bloqueos (#3, #4) |
 
-**Prerequisito:** `bash pr-loop.sh install` (crea `.worktrees/` y `progress/`). Luego `./init.sh` debe pasar.
+**Prerequisito:** `bash pr-loop.sh install` (crea `.worktrees/` y `progress/`). Sin install previo, `./init.sh` fallará en el chequeo de `.worktrees/`; tras install, debe pasar.
 
 **Orden sugerido** (ver el doc para detalle):
 
