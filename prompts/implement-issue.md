@@ -6,7 +6,7 @@ Eres el agente implementador. Trabajas dentro de un worktree aislado. Tu objetiv
 
 1. Si existe un script de health check (`init.sh` u otro indicado en el proyecto), córrelo primero. Si falla, detente y reporta el error.
 2. Lee `CLAUDE.md` o la documentación del proyecto para entender convenciones y zonas protegidas.
-3. Lee el issue: `gh issue view {{ISSUE}}`.
+3. Lee el issue: `gh issue view {{ISSUE}}`. Debe seguir `issues/CONTRATO.md` (alcance Entra/No entra, criterios verificables).
 4. Lee los tests existentes del área que vas a modificar antes de tocar código.
 5. Implementa el cambio mínimo que satisface el issue. Sin refactors cosméticos no pedidos.
 

@@ -56,10 +56,35 @@ EOF
   ok ".pr-loop.env creado (ajusta INIT_SCRIPT y modelos)"
 fi
 
-# 5. issues/ scaffold opcional
-if [ ! -d "$REPO_ROOT/issues" ]; then
-  mkdir -p "$REPO_ROOT/issues"
-  note "creado issues/ — añade orden-de-trabajo.md si usas check_order.sh"
+# 5. issues/ scaffold (contrato + template + orden)
+mkdir -p "$REPO_ROOT/issues"
+for f in CONTRATO.md TEMPLATE.md; do
+  if [ -f "$REPO_ROOT/issues/$f" ]; then
+    ok "issues/$f ya existe"
+  elif [ -f "$SCRIPT_DIR/../issues/$f" ]; then
+    cp "$SCRIPT_DIR/../issues/$f" "$REPO_ROOT/issues/$f"
+    ok "issues/$f copiado"
+  fi
+done
+if [ ! -f "$REPO_ROOT/issues/orden-de-trabajo.md" ]; then
+  cat > "$REPO_ROOT/issues/orden-de-trabajo.md" <<'EOF'
+# Orden de trabajo
+
+Cola priorizada para `pr-loop.sh`. `scripts/check_order.sh` avisa si un issue no está listado o está bloqueado.
+
+## Listos para implementar
+
+| Orden | Issue | Título | Notas |
+|-------|-------|--------|-------|
+
+## Bloqueados
+
+| Issue | Título | Motivo |
+|-------|--------|--------|
+EOF
+  ok "issues/orden-de-trabajo.md creado (plantilla vacía)"
+else
+  ok "issues/orden-de-trabajo.md ya existe"
 fi
 
 echo ""
