@@ -40,7 +40,7 @@ bash pr-loop.sh issue-2 --dry-run   # plan sin gastar tokens
 bash pr-loop.sh issue-2             # ciclo completo → PR en GitHub
 ```
 
-Cada corrida: rama `issue-N` → worktree `.worktrees/issue-N` → reviews en `progress/`.
+Cada corrida: rama `issue-N` → worktree `.worktrees/issue-N` → reviews en `progress/`. Al terminar, el orquestador añade una entrada legible en `progress/history.md` (audit trail append-only, gitignored).
 
 ---
 
@@ -77,11 +77,23 @@ pr-loop/
 │   ├── fix-from-reviews.md
 │   ├── review-claude.md
 │   └── review-codex.md
-└── progress/            # reviews y estado (gitignore recomendado)
+└── progress/            # reviews, estado y historial (gitignore recomendado)
+    ├── current.json     # estado de la sesión activa (sub-objeto pr_loop)
+    └── history.md       # audit trail append-only por corrida (gitignored)
     .worktrees/          # git worktree por issue (gitignore obligatorio)
 ```
 
 `bash pr-loop.sh install` crea `.worktrees/` y `progress/` y los añade a `.gitignore`.
+
+### Historial de corridas (`progress/history.md`)
+
+Tras cada ejecución (éxito o fallo parcial), `pr-loop.sh` registra metadata de la sesión: `SESSION_ID`, issue, PR, fases completadas, intentos de fix, bloqueantes finales de Claude y veredicto del gate. Si reanudas con `--from FASE`, la entrada incluye la fase de reanudación.
+
+El archivo vive en `progress/` y **no se versiona** (mismo criterio que reviews y `current.json`). Útil para comparar corridas al automejorar el pipeline.
+
+```bash
+tail -n 30 progress/history.md   # últimas entradas
+```
 
 ---
 

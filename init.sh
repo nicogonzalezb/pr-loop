@@ -62,6 +62,34 @@ else
   fail ".worktrees/ — corre: bash pr-loop.sh install"
 fi
 
+# 7. Audit trail (state_append_history)
+if bash -c 'source "$1/scripts/state.sh"; declare -f state_append_history' _ "$REPO_ROOT" &>/dev/null; then
+  ok "state_append_history definido"
+  hist_tmp="$(mktemp)"
+  if HISTORY_FILE="$hist_tmp" \
+     HISTORY_SESSION="test-session" \
+     HISTORY_ISSUE="issue-test" \
+     HISTORY_ISSUE_NUM="99" \
+     HISTORY_PR="42" \
+     HISTORY_FROM="review-claude" \
+     HISTORY_PHASES="review-claude,gate" \
+     HISTORY_FIX_ATTEMPTS="1" \
+     HISTORY_BLOQUEANTES="0" \
+     HISTORY_FIX_STATUS="éxito" \
+     HISTORY_GATE_VERDICT="MERGE OK" \
+     HISTORY_GATE_RC="0" \
+     bash -c 'source "$1/scripts/state.sh"; state_append_history' _ "$REPO_ROOT" \
+     && grep -q 'test-session' "$hist_tmp" \
+     && grep -q 'Reanudado desde' "$hist_tmp"; then
+    ok "state_append_history escribe entrada"
+  else
+    fail "state_append_history no escribió entrada válida"
+  fi
+  rm -f "$hist_tmp"
+else
+  fail "state_append_history no definido en scripts/state.sh"
+fi
+
 echo ""
 if [ "$FAILED" -eq 0 ]; then
   ok "Entorno listo"
