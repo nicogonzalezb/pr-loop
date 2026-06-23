@@ -49,18 +49,32 @@ state_init() {
   local issue="$1" pr="$2" session="$3"
   local pr_json="null"
   [ "$pr" != "null" ] && [ -n "$pr" ] && pr_json="$pr"
+  local max_usd="null" max_tokens="null"
+  [ -n "${PR_LOOP_MAX_USD:-}" ] && max_usd="${PR_LOOP_MAX_USD}"
+  [ -n "${PR_LOOP_MAX_TOKENS:-}" ] && max_tokens="${PR_LOOP_MAX_TOKENS}"
   local tmp; tmp="$(mktemp)"
   jq \
     --arg issue "$issue" \
     --argjson pr "$pr_json" \
     --arg session "$session" \
+    --argjson max_usd "$max_usd" \
+    --argjson max_tokens "$max_tokens" \
     '.pr_loop = {
       issue: $issue,
       pr: $pr,
       fase: "init",
       session_id: $session,
       intentos_fix: 0,
-      reviews: { claude: null, codex: null }
+      reviews: { claude: null, codex: null },
+      budget: {
+        max_usd: (if $max_usd == null then null else ($max_usd | tonumber) end),
+        max_tokens: (if $max_tokens == null then null else ($max_tokens | tonumber) end),
+        spent_usd: 0,
+        tokens: 0,
+        entries: [],
+        exceeded: false,
+        exceeded_reason: null
+      }
     }' "$STATE_FILE" > "$tmp" && mv "$tmp" "$STATE_FILE"
 }
 

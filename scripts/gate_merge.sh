@@ -11,6 +11,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 : "${REPO_ROOT:=$(cd "$SCRIPT_DIR/.." && pwd)}"
+# shellcheck source=scripts/budget.sh
+source "$SCRIPT_DIR/budget.sh"
 
 PR_NUM="${1:?pr_num requerido}"
 ISSUE="${2:?issue requerido}"
@@ -89,6 +91,13 @@ if command -v gh &>/dev/null; then
   fi
 fi
 
+# ── Presupuesto de corrida (claude -p) ───────────────────────────────
+budget_line="$(budget_summary_line)"
+budget_exceeded=0
+if jq -e '.pr_loop.budget.exceeded == true' "${STATE_FILE:-$REPO_ROOT/progress/current.json}" &>/dev/null; then
+  budget_exceeded=1
+fi
+
 # ── Decisión ─────────────────────────────────────────────────────────
 # init_exit_code ya vale 0 si INIT_SCRIPT no corrió (no suma bloqueante).
 total_bloqueantes=$(( claude_bloqueantes + codex_bloqueantes + init_exit_code ))
@@ -108,6 +117,7 @@ PR #$PR_NUM — $ISSUE
   Claude Opus:   $claude_veredicto ($claude_bloqueantes bloqueantes)
   Codex review:  $codex_resumen [$codex_metodo]
   Tests (INIT_SCRIPT): $init_resumen
+  Presupuesto:   $budget_line
   CI GitHub:     $ci_estado
   Total bloqueantes: $total_bloqueantes
   → $recomendacion
@@ -133,6 +143,7 @@ if command -v gh &>/dev/null; then
 | Claude Opus (\`claude -p\`) | \`$claude_veredicto\` | $claude_bloqueantes |
 | Codex (\`codex review\`) | $codex_metodo | $codex_bloqueantes |
 | Tests (\`INIT_SCRIPT\`) | $init_icono | $init_exit_code |
+| Presupuesto (\`claude -p\`) | $budget_line | $budget_exceeded |
 
 - CI GitHub: **$ci_estado**
 - Total bloqueantes: **$total_bloqueantes**
