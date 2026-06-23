@@ -9,6 +9,7 @@
 #   state_set_fase "review-claude"
 #   state_set_review claude "progress/...-claude-review.json"
 #   state_get_fase
+#   state_append_history   # requiere HISTORY_* (ver función)
 set -euo pipefail
 
 : "${REPO_ROOT:=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
@@ -112,4 +113,77 @@ state_clear() {
   _state_ensure_file
   local tmp; tmp="$(mktemp)"
   jq 'del(.pr_loop) | .estado = "idle"' "$STATE_FILE" > "$tmp" && mv "$tmp" "$STATE_FILE"
+}
+
+HISTORY_FILE="${HISTORY_FILE:-$REPO_ROOT/progress/history.md}"
+
+# state_append_history — append de metadata de corrida a progress/history.md
+# Variables de entorno (exportadas por pr-loop.sh antes de invocar):
+#   HISTORY_SESSION, HISTORY_ISSUE, HISTORY_ISSUE_NUM (opcional)
+#   HISTORY_PR, HISTORY_FROM (opcional), HISTORY_PHASES (csv)
+#   HISTORY_FIX_ATTEMPTS, HISTORY_BLOQUEANTES, HISTORY_FIX_STATUS
+#   HISTORY_GATE_VERDICT, HISTORY_GATE_RC
+#   HISTORY_GASTO (opcional, cuando exista presupuesto #1)
+state_append_history() {
+  _state_dry && return 0
+
+  local session="${HISTORY_SESSION:?HISTORY_SESSION requerido}"
+  local issue="${HISTORY_ISSUE:?HISTORY_ISSUE requerido}"
+  local issue_num="${HISTORY_ISSUE_NUM:-}"
+  local pr="${HISTORY_PR:-}"
+  local from_phase="${HISTORY_FROM:-}"
+  local phases="${HISTORY_PHASES:-}"
+  local fix_attempts="${HISTORY_FIX_ATTEMPTS:-0}"
+  local bloqueantes="${HISTORY_BLOQUEANTES:-0}"
+  local fix_status="${HISTORY_FIX_STATUS:-}"
+  local gate_verdict="${HISTORY_GATE_VERDICT:-}"
+  local gate_rc="${HISTORY_GATE_RC:-}"
+  local gasto="${HISTORY_GASTO:-}"
+
+  mkdir -p "$(dirname "$HISTORY_FILE")"
+  if [ ! -f "$HISTORY_FILE" ]; then
+    cat > "$HISTORY_FILE" <<'EOF'
+# pr-loop — historial de corridas
+
+Log append-only de sesiones del pipeline (gitignored junto con `progress/`).
+
+EOF
+  fi
+
+  local issue_label="$issue"
+  [ -n "$issue_num" ] && issue_label="${issue} (#${issue_num})"
+
+  local pr_label="—"
+  [ -n "$pr" ] && [ "$pr" != "null" ] && pr_label="#${pr}"
+
+  local from_label="—"
+  [ -n "$from_phase" ] && from_label="\`${from_phase}\`"
+
+  local phases_label="${phases:-—}"
+  [ -n "$phases" ] && phases_label="\`${phases}\`"
+
+  local gate_label="—"
+  if [ -n "$gate_verdict" ]; then
+    gate_label="${gate_verdict}"
+    [ -n "$gate_rc" ] && gate_label="${gate_label} (exit ${gate_rc})"
+  fi
+
+  {
+    echo "## ${session} — ${issue}"
+    echo ""
+    echo "| Campo | Valor |"
+    echo "|-------|-------|"
+    echo "| Issue | \`${issue_label}\` |"
+    echo "| PR | ${pr_label} |"
+    echo "| Reanudado desde | ${from_label} |"
+    echo "| Fases completadas | ${phases_label} |"
+    echo "| Intentos fix | ${fix_attempts} |"
+    [ -n "$fix_status" ] && echo "| Fix loop | ${fix_status} |"
+    echo "| Bloqueantes finales (Claude) | ${bloqueantes} |"
+    echo "| Gate | ${gate_label} |"
+    [ -n "$gasto" ] && echo "| Gasto acumulado | ${gasto} |"
+    echo ""
+    echo "---"
+    echo ""
+  } >> "$HISTORY_FILE"
 }

@@ -383,6 +383,69 @@ should_run() {
   return 1
 }
 
+# ── Historial de corrida (progress/history.md) ───────────────────────
+COMPLETED_PHASES=()
+
+record_phase() {
+  COMPLETED_PHASES+=("$1")
+}
+
+append_run_history() {
+  [ "$DRY_RUN" = "1" ] && return 0
+
+  local bloqueantes=0
+  local claude_json="${CLAUDE_JSON:-$PROGRESS_DIR/${SESSION_ID}-claude-review.json}"
+  if [ -f "$claude_json" ] && command -v jq &>/dev/null; then
+    bloqueantes="$(jq '.bloqueantes // [] | length' "$claude_json" 2>/dev/null || echo 0)"
+  fi
+
+  local fix_attempts=0
+  fix_attempts="$(state_get intentos_fix 2>/dev/null || echo 0)"
+  fix_attempts="${fix_attempts:-0}"
+
+  local fix_status=""
+  if [ "$MAX_FIX" -le 0 ]; then
+    fix_status="omitido (--max-fix=0)"
+  elif [ "${FIX_EXITOSO:-0}" = "1" ]; then
+    fix_status="agotado con bloqueantes"
+  elif [ "$fix_attempts" -gt 0 ]; then
+    fix_status="éxito"
+  else
+    fix_status="sin intentos"
+  fi
+
+  local gate_verdict=""
+  if [ "${GATE_RAN:-0}" = "1" ]; then
+    if [ "${GATE_RC:-1}" -eq 0 ]; then
+      gate_verdict="MERGE OK"
+    else
+      gate_verdict="NO mergear aún"
+    fi
+  else
+    gate_verdict="(gate no ejecutado)"
+  fi
+
+  local phases_csv=""
+  if [ "${#COMPLETED_PHASES[@]}" -gt 0 ]; then
+    phases_csv="$(IFS=,; echo "${COMPLETED_PHASES[*]}")"
+  fi
+
+  export HISTORY_SESSION="$SESSION_ID"
+  export HISTORY_ISSUE="$ISSUE"
+  export HISTORY_ISSUE_NUM="${ISSUE_NUM:-}"
+  export HISTORY_PR="${PR:-}"
+  export HISTORY_FROM="${FROM:-}"
+  export HISTORY_PHASES="$phases_csv"
+  export HISTORY_FIX_ATTEMPTS="$fix_attempts"
+  export HISTORY_BLOQUEANTES="$bloqueantes"
+  export HISTORY_FIX_STATUS="$fix_status"
+  export HISTORY_GATE_VERDICT="$gate_verdict"
+  export HISTORY_GATE_RC="${GATE_RC:-}"
+  unset HISTORY_GASTO
+
+  state_append_history
+}
+
 # ── Main ─────────────────────────────────────────────────────────────
 main() {
   mkdir -p "$PROGRESS_DIR"
@@ -404,11 +467,11 @@ main() {
     state_init "$ISSUE" "${PR:-null}" "$SESSION_ID"
   fi
 
-  should_run worktree      && { phase_order; phase_worktree; }
-  should_run implement     && phase_implement
-  should_run pr            && phase_pr
-  should_run review-claude && phase_review_claude
-  should_run fix           && phase_fix
+  should_run worktree      && { phase_order; phase_worktree; record_phase worktree; }
+  should_run implement     && { phase_implement; record_phase implement; }
+  should_run pr            && { phase_pr; record_phase pr; }
+  should_run review-claude && { phase_review_claude; record_phase review-claude; }
+  should_run fix           && { phase_fix; record_phase fix; }
 
   # Self-healing: si el fix se agotó con bloqueantes pendientes, intentar
   # mejorar automáticamente el prompt fix-from-reviews.md para futuras ejecuciones.
@@ -418,12 +481,18 @@ main() {
       "$ISSUE" "$SESSION_ID" || true
   fi
 
-  should_run review-codex  && phase_review_codex
+  should_run review-codex  && { phase_review_codex; record_phase review-codex; }
 
   local gate_rc=0
+  GATE_RAN=0
   if should_run gate; then
+    GATE_RAN=1
     phase_gate || gate_rc=$?
+    record_phase gate
   fi
+  GATE_RC=$gate_rc
+
+  append_run_history
 
   echo ""
   if [ "${FIX_EXITOSO:-0}" = "1" ]; then
