@@ -467,6 +467,14 @@ main() {
     state_init "$ISSUE" "${PR:-null}" "$SESSION_ID"
   fi
 
+  HISTORY_APPENDED=0
+  finalize_run_history() {
+    [ "$HISTORY_APPENDED" = "1" ] && return 0
+    HISTORY_APPENDED=1
+    append_run_history || true
+  }
+  trap finalize_run_history EXIT
+
   should_run worktree      && { phase_order; phase_worktree; record_phase worktree; }
   should_run implement     && { phase_implement; record_phase implement; }
   should_run pr            && { phase_pr; record_phase pr; }
@@ -492,7 +500,7 @@ main() {
   fi
   GATE_RC=$gate_rc
 
-  append_run_history
+  finalize_run_history
 
   echo ""
   if [ "${FIX_EXITOSO:-0}" = "1" ]; then
