@@ -28,3 +28,14 @@ Ninguno. Verificación manual:
 - `Write(**)` cubre el worktree completo; los `deny` protegen secretos sin bloquear el flujo normal de implementación.
 - Permisos por proyecto en repos consumidores quedan fuera de scope (issue #4).
 - Se corrió `bash pr-loop.sh install` para crear `.worktrees/` y que `init.sh` pase en este worktree (prerequisito de entorno, no parte del diff funcional).
+
+## Correcciones tras review
+
+**Review Claude** (`20260623T202556-claude-review.json`): veredicto `approve`, **0 bloqueantes**. Review Codex: no generada en esta sesión.
+
+| Punto | Acción |
+|-------|--------|
+| Bloqueantes | Ninguno — PR cumple los 3 criterios de aceptación del issue #6. |
+| `Write(**)` amplio (sugerencia) | Fuera de scope: los `deny` de secretos mitigan el riesgo; acotar el glob queda para un issue futuro si hace falta. |
+| `deny` de `curl`/`wget` (sugerencia) | Sin cambio: descargas vetadas a propósito; el README ya documenta el propósito headless. |
+| `./init.sh` no corrido en entorno del revisor | Ejecutado localmente en el worktree: pasa (deps, sintaxis, dry-run, archivos clave). |
