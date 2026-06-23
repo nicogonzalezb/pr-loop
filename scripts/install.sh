@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Instala pr-loop en un proyecto: git worktree, directorios y .gitignore.
+# Instala pr-loop en un proyecto: git worktree, directorios, .gitignore y scaffold issues/.
 #
 # Uso:
 #   bash pr-loop.sh install
@@ -64,6 +64,8 @@ for f in CONTRATO.md TEMPLATE.md; do
   elif [ -f "$SCRIPT_DIR/../issues/$f" ]; then
     cp "$SCRIPT_DIR/../issues/$f" "$REPO_ROOT/issues/$f"
     ok "issues/$f copiado"
+  else
+    note "advertencia: no se encontró issues/$f (ni en proyecto ni en pr-loop core); init.sh fallará si falta"
   fi
 done
 if [ ! -f "$REPO_ROOT/issues/orden-de-trabajo.md" ]; then
