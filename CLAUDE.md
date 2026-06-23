@@ -55,7 +55,7 @@ worktree → implement → pr → review-claude → fix → review-codex → gat
 | `scripts/state.sh` | Estado en `progress/current.json` (sub-objeto `pr_loop`) |
 | `scripts/render_prompt.sh` | Sustituye placeholders `{{ISSUE}}`/`{{PR}}`/`{{SESSION}}`/`{{REVIEWS}}` |
 | `scripts/check_order.sh` | Warning de orden de issues (opcional, sourced) |
-| `scripts/{cursor_implement,claude_review,codex_review,gate_merge,self_heal,worktree,install}.sh` | Wrappers de fase + git worktree + install |
+| `scripts/{cursor_implement,claude_review,codex_review,gate_merge,self_heal,worktree,install,cleanup}.sh` | Wrappers de fase + git worktree + install + cleanup |
 | `prompts/` | Prompts versionados con placeholders |
 | `init.sh` | Health check del proyecto (sourced vía `INIT_SCRIPT`) |
 | `.pr-loop.env` | Config del proyecto sourced por `pr-loop.sh` (modelos, rama base, `INIT_SCRIPT`) |
