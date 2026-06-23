@@ -26,7 +26,7 @@ worktree → implement → pr → review-claude → fix → review-codex → gat
 - `--from FASE` reanuda desde una fase concreta: `should_run` recorre `PHASES` y solo ejecuta de `FROM` en adelante.
 - `--dry-run` (o `PR_LOOP_DRY_RUN=1`) corta todo efecto secundario (no agentes, no `gh`, no escritura de estado). Toda fase respeta este flag.
 
-**Estado** (`scripts/state.sh`): se persiste el sub-objeto `pr_loop` dentro de `progress/current.json` (fase actual, `pr`, `intentos_fix`, paths de `reviews.{claude,codex}`). Todas las escrituras pasan por helpers `state_*` que hacen no-op en dry-run. Los artefactos de cada corrida se nombran `progress/${SESSION_ID}-*` (`SESSION_ID` = timestamp UTC por defecto).
+**Estado** (`scripts/state.sh`): se persiste el sub-objeto `pr_loop` dentro de `progress/current.json` (fase actual, `pr`, `intentos_fix`, paths de `reviews.{claude,codex}`, `budget` con gasto acumulado de `claude -p`). Todas las escrituras pasan por helpers `state_*` que hacen no-op en dry-run. Los artefactos de cada corrida se nombran `progress/${SESSION_ID}-*` (`SESSION_ID` = timestamp UTC por defecto).
 
 **Resolución de target** (`resolve_targets`): con `--pr N`, se deriva la rama/issue vía `gh` y, si falta, se parsea `Closes #N` del body del PR. El worktree vive en `.worktrees/<rama>`.
 
@@ -55,7 +55,7 @@ worktree → implement → pr → review-claude → fix → review-codex → gat
 | `scripts/state.sh` | Estado en `progress/current.json` (sub-objeto `pr_loop`) |
 | `scripts/render_prompt.sh` | Sustituye placeholders `{{ISSUE}}`/`{{PR}}`/`{{SESSION}}`/`{{REVIEWS}}` |
 | `scripts/check_order.sh` | Warning de orden de issues (opcional, sourced) |
-| `scripts/{cursor_implement,claude_review,codex_review,gate_merge,self_heal,worktree,install}.sh` | Wrappers de fase + git worktree + install |
+| `scripts/{cursor_implement,claude_review,codex_review,gate_merge,self_heal,worktree,install,budget}.sh` | Wrappers de fase + git worktree + install + presupuesto |
 | `prompts/` | Prompts versionados con placeholders |
 | `init.sh` | Health check del proyecto (sourced vía `INIT_SCRIPT`) |
 | `.pr-loop.env` | Config del proyecto sourced por `pr-loop.sh` (modelos, rama base, `INIT_SCRIPT`) |

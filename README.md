@@ -211,6 +211,8 @@ gh issue create --title "feat: …" --body-file issues/TEMPLATE.md
 | `PROMPTS_DIR` | Ruta a los prompts (default: `./prompts`) |
 | `ORDER_FILE` | Documento de orden de issues (default: `./issues/orden-de-trabajo.md`) |
 | `PR_LOOP_DRY_RUN` | Si es `"1"`, equivale a `--dry-run` |
+| `PR_LOOP_MAX_USD` | Tope de gasto USD por corrida (`claude -p`); aborta antes de la siguiente fase |
+| `PR_LOOP_MAX_TOKENS` | Tope de tokens input+output por corrida (`claude -p`) |
 | `SESSION_ID` | ID de sesión (default: timestamp UTC) |
 
 ---
@@ -232,4 +234,5 @@ Desde el **15 de junio de 2026**, `claude -p` consume un **crédito mensual Agen
 Para estirar el crédito:
 - Usar `--max-fix 0` para omitir la fase de fix.
 - Bajar el modelo: `CLAUDE_MODEL=sonnet bash pr-loop.sh ...`
+- Fijar tope por corrida: `PR_LOOP_MAX_USD=5 PR_LOOP_MAX_TOKENS=500000 bash pr-loop.sh ...`
 - Para reviews puntuales de alta calidad, lanzarlas interactivas (sin `-p`).
