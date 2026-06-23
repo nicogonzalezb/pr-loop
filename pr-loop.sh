@@ -12,6 +12,7 @@
 # NO mergea automáticamente.
 #
 # Uso:
+#   bash pr-loop.sh install            # preparar proyecto (git worktree, .gitignore)
 #   bash pr-loop.sh issue-35
 #   bash pr-loop.sh --pr 57
 #   bash pr-loop.sh --pr 57 --from review-claude
@@ -29,9 +30,6 @@
 # Variables de entorno:
 #   INIT_SCRIPT        Script de health check a correr antes de cada fase (opcional).
 #                      Ej: INIT_SCRIPT=./init.sh
-#   WORKTREE_SCRIPT    Script que crea el worktree dado el issue-N.
-#                      Si no se define, se usa `git worktree add` directamente.
-#                      Ej: WORKTREE_SCRIPT=./wt.sh
 #   PR_BASE_BRANCH     Rama base del PR (default: main).
 #   CURSOR_MODEL       Modelo de implement/fix (default: composer-2.5).
 #   CLAUDE_MODEL       Modelo de review Claude (default: opus).
@@ -43,6 +41,14 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$REPO_ROOT"
 SCRIPTS_DIR="$REPO_ROOT/scripts"
 PROGRESS_DIR="$REPO_ROOT/progress"
+
+# Capa de config del proyecto (dogfooding / overlay futuro de #3).
+if [ -f "$REPO_ROOT/.pr-loop.env" ]; then
+  set -a
+  # shellcheck source=/dev/null
+  source "$REPO_ROOT/.pr-loop.env"
+  set +a
+fi
 
 export REPO_ROOT PROMPTS_DIR="${PROMPTS_DIR:-$REPO_ROOT/prompts}"
 
@@ -60,6 +66,7 @@ SELF_HEAL=1
 
 while [ $# -gt 0 ]; do
   case "$1" in
+    install)        bash "$SCRIPTS_DIR/install.sh"; exit $?;;
     --pr)           PR="${2:?--pr requiere número}"; shift 2;;
     --from)         FROM="${2:?--from requiere fase}"; shift 2;;
     --dry-run)      DRY_RUN=1; shift;;
@@ -106,6 +113,21 @@ preflight() {
     fi
   fi
 
+  if [ -n "${WORKTREE_SCRIPT:-}" ]; then
+    echo "  ✗ WORKTREE_SCRIPT está deprecado; pr-loop usa git worktree de forma obligatoria." >&2
+    fail=1
+  fi
+
+  if [ "$DRY_RUN" != "1" ]; then
+    if bash "$SCRIPTS_DIR/worktree.sh" verify &>/dev/null; then
+      echo "  ✓ git worktree"
+    else
+      echo "  ✗ git worktree no disponible o no es un repo git"
+      echo "    Corre: bash pr-loop.sh install" >&2
+      fail=1
+    fi
+  fi
+
   if [ "$fail" = "1" ]; then
     echo "❌ Preflight falló. Revisa README.md para el setup." >&2
     [ "$DRY_RUN" = "1" ] && echo "  (dry-run: continúo de todas formas)" || exit 1
@@ -115,12 +137,24 @@ preflight() {
 
 # ── Resolver issue/PR según los argumentos ───────────────────────────
 resolve_targets() {
+  HEAD_REF=""
   if [ -n "$PR" ]; then
     if [ "$DRY_RUN" != "1" ]; then
-      local head_ref
+      local head_ref pr_text
       head_ref="$(gh pr view "$PR" --json headRefName -q .headRefName 2>/dev/null || true)"
+      HEAD_REF="$head_ref"
       if [ -n "$head_ref" ] && [[ "$head_ref" =~ ^issue- ]]; then
         ISSUE="$head_ref"
+      fi
+      if [ -z "$ISSUE" ] || [[ "$ISSUE" == pr-* ]]; then
+        pr_text="$(gh pr view "$PR" --json body,title -q '.body + "\n" + .title' 2>/dev/null || true)"
+        if [[ "$pr_text" =~ [Cc]loses[[:space:]]*#([0-9]+) ]]; then
+          ISSUE_NUM="${BASH_REMATCH[1]}"
+          ISSUE="issue-${ISSUE_NUM}"
+        elif [[ "$pr_text" =~ (^|[^0-9])#([0-9]+)([^0-9]|$) ]]; then
+          ISSUE_NUM="${BASH_REMATCH[2]}"
+          ISSUE="issue-${ISSUE_NUM}"
+        fi
       fi
     fi
     [ -z "$ISSUE" ] && ISSUE="${ISSUE:-pr-$PR}"
@@ -131,10 +165,13 @@ resolve_targets() {
     exit 2
   fi
 
-  ISSUE_NUM="${ISSUE#issue-}"
-  [[ "$ISSUE_NUM" =~ ^[0-9]+$ ]] || ISSUE_NUM=""
+  if [ -z "${ISSUE_NUM:-}" ]; then
+    ISSUE_NUM="${ISSUE#issue-}"
+    [[ "$ISSUE_NUM" =~ ^[0-9]+$ ]] || ISSUE_NUM=""
+  fi
 
-  WORKTREE="$REPO_ROOT/.worktrees/$ISSUE"
+  local wt_key="${HEAD_REF:-$ISSUE}"
+  WORKTREE="$REPO_ROOT/.worktrees/$wt_key"
 }
 
 # ── Fase 0b: chequeo de orden ────────────────────────────────────────
@@ -166,14 +203,10 @@ phase_worktree() {
   fi
   if [ -d "$WORKTREE" ]; then
     echo "  Worktree ya existe: $WORKTREE"
-  elif [ -n "${WORKTREE_SCRIPT:-}" ]; then
-    bash "$WORKTREE_SCRIPT" "$ISSUE"
+  elif [ -n "${PR:-}" ] && [ -n "${HEAD_REF:-}" ]; then
+    bash "$SCRIPTS_DIR/worktree.sh" add-pr "$HEAD_REF" "$WORKTREE"
   else
-    # Comportamiento por defecto: rama nueva desde la base del PR.
-    local base="${PR_BASE_BRANCH:-main}"
-    git fetch origin "$base" 2>/dev/null || true
-    git worktree add -b "$ISSUE" "$WORKTREE" "origin/$base" 2>/dev/null \
-      || git worktree add "$WORKTREE" "$ISSUE"
+    bash "$SCRIPTS_DIR/worktree.sh" add-issue "$ISSUE" "$WORKTREE" "${PR_BASE_BRANCH:-main}"
   fi
   echo ""
 }
@@ -181,6 +214,10 @@ phase_worktree() {
 # ── Fase 2: implement ────────────────────────────────────────────────
 phase_implement() {
   echo "=== Fase 2: Implement (agent -p / Composer 2.5) ==="
+  if [ -z "$ISSUE_NUM" ]; then
+    echo "❌ Fase implement requiere un issue numerado (rama issue-N o PR con 'Closes #N')." >&2
+    exit 2
+  fi
   state_set_fase "implement"
   bash "$SCRIPTS_DIR/cursor_implement.sh" \
     "$WORKTREE" "implement-issue.md" "$ISSUE_NUM" "$SESSION_ID"
@@ -233,6 +270,10 @@ FIX_EXITOSO=0   # 0 = sin bloqueantes al salir; 1 = se agotaron los intentos
 
 phase_fix() {
   echo "=== Fase 5: Fix (loop agéntico, máx $MAX_FIX loops) ==="
+  if [ -z "$ISSUE_NUM" ]; then
+    echo "❌ Fase fix requiere un issue numerado (rama issue-N o PR con 'Closes #N')." >&2
+    exit 2
+  fi
   if [ "$MAX_FIX" -le 0 ]; then
     echo "  --max-fix=0: se omite la fase de fix."
     FIX_EXITOSO=0

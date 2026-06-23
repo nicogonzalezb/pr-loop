@@ -15,6 +15,33 @@ El pipeline **nunca** mergea solo. El merge lo hace un humano.
 
 ---
 
+## Dogfooding (automejora en este repo)
+
+Este repositorio puede ejecutar el pipeline sobre sus propios issues abiertos. La capa mínima ya está en la raíz:
+
+| Archivo | Rol |
+|---------|-----|
+| `.pr-loop.env` | `INIT_SCRIPT`, modelos, rama base (sourced por `pr-loop.sh`) |
+| `init.sh` | Smoke tests: sintaxis bash, dry-run, archivos clave |
+| `CLAUDE.md` | Convenciones para implementador y reviewer |
+| `issues/orden-de-trabajo.md` | Orden recomendado y bloqueos (#3, #4) |
+
+**Orden sugerido** (ver el doc para detalle):
+
+1. `issue-2` — defensa prompt-injection
+2. `issue-1` — presupuesto de tokens/$
+3. `issue-5` — outer loop / planner (desbloquea distribución)
+
+```bash
+./init.sh
+bash pr-loop.sh issue-2 --dry-run   # plan sin gastar tokens
+bash pr-loop.sh issue-2             # ciclo completo → PR en GitHub
+```
+
+Cada corrida: rama `issue-N` → worktree `.worktrees/issue-N` → reviews en `progress/`.
+
+---
+
 ## Uso
 
 ```bash
@@ -49,14 +76,32 @@ pr-loop/
 │   ├── review-claude.md
 │   └── review-codex.md
 └── progress/            # reviews y estado (gitignore recomendado)
+    .worktrees/          # git worktree por issue (gitignore obligatorio)
 ```
+
+`bash pr-loop.sh install` crea `.worktrees/` y `progress/` y los añade a `.gitignore`.
 
 ---
 
 ## Setup
 
+### 0. Instalar en tu proyecto (primero)
+
+pr-loop **requiere git worktree** para aislar cada issue en `.worktrees/issue-N`. Al adoptar el pipeline en un repo:
+
 ```bash
-# 1. Cursor CLI
+# Copia o trae pr-loop al proyecto, luego:
+bash pr-loop.sh install
+```
+
+`install` verifica git + worktree, crea `.worktrees/` y `progress/`, actualiza `.gitignore` y genera `.pr-loop.env` si no existe. Es idempotente.
+
+Requisitos de git: **≥ 2.5** (`git worktree` incluido). No hay alternativa a worktrees — es el único mecanismo de aislamiento.
+
+### 1. CLIs del pipeline
+
+```bash
+# Cursor CLI
 curl https://cursor.com/install -fsS | bash
 agent login
 
@@ -104,16 +149,18 @@ export INIT_SCRIPT=./init.sh
 bash pr-loop.sh issue-35
 ```
 
-### 3. Creación de worktree (opcional)
+### 3. Git worktree (obligatorio)
 
-Si tienes tu propio script de worktree (p.ej. `wt.sh`):
+Cada corrida crea un **git worktree** en `.worktrees/issue-N` con rama `issue-N`. No se soportan scripts alternativos (`WORKTREE_SCRIPT` fue eliminado).
+
+Tras mergear un PR, limpia el worktree huérfano:
 
 ```bash
-export WORKTREE_SCRIPT=./wt.sh
-bash pr-loop.sh issue-35
+git worktree remove .worktrees/issue-N
+git worktree prune
 ```
 
-Sin `WORKTREE_SCRIPT`, el pipeline usa `git worktree add` directamente.
+(Ver issue #10 para un comando `cleanup` automatizado.)
 
 ### 4. Herramientas permitidas al reviewer Claude
 
@@ -138,7 +185,6 @@ Si tienes un `issues/orden-de-trabajo.md` con la secuencia planificada, `check_o
 | Variable | Efecto |
 |----------|--------|
 | `INIT_SCRIPT` | Script de health check a correr antes de cada agente (path absoluto o relativo al repo) |
-| `WORKTREE_SCRIPT` | Script personalizado de creación de worktree |
 | `PR_BASE_BRANCH` | Rama base del PR y diff Codex (default: `main`) |
 | `CURSOR_MODEL` | Modelo de implement/fix (default: `composer-2.5`) |
 | `CLAUDE_MODEL` | Modelo de review Claude (default: `opus`) |
