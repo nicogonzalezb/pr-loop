@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar dependencias del runner
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq shellcheck
+
+      - name: Preparar runtime de pr-loop
+        run: bash pr-loop.sh install
+
+      - name: Smoke tests (init.sh)
+        run: ./init.sh
