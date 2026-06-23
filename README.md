@@ -24,6 +24,8 @@ Este repositorio puede ejecutar el pipeline sobre sus propios issues abiertos. L
 | `.pr-loop.env` | `INIT_SCRIPT`, modelos, rama base (sourced por `pr-loop.sh`) |
 | `init.sh` | Smoke tests: sintaxis bash, dry-run, archivos clave |
 | `CLAUDE.md` | Convenciones para implementador y reviewer |
+| `issues/CONTRATO.md` | Spec del formato de issues |
+| `issues/TEMPLATE.md` | Plantilla para `gh issue create` |
 | `issues/orden-de-trabajo.md` | Orden recomendado y bloqueos (#3, #4) |
 
 **Orden sugerido** (ver el doc para detalle):
@@ -177,6 +179,23 @@ Edita `prompts/review-claude.md` para añadir criterios específicos de tu proye
 ### 6. Orden de issues (opcional)
 
 Si tienes un `issues/orden-de-trabajo.md` con la secuencia planificada, `check_order.sh` lo detecta automáticamente. Si no existe el archivo, el chequeo se omite sin error.
+
+`bash pr-loop.sh install` copia `issues/CONTRATO.md` y `issues/TEMPLATE.md` al proyecto si faltan, y crea una plantilla de `orden-de-trabajo.md`.
+
+### 7. Skill global de issues vs bootstrap por proyecto
+
+| Skill | Ubicación | Cuándo |
+|-------|-----------|--------|
+| **issues-estructure** | `~/.cursor/skills/issues-estructure/` | Crear/editar issues, planificar, invocar pr-loop, descomponer épicos — **todos los proyectos** |
+| **Bootstrap pr-loop (#4)** | Por proyecto (futuro) | Instalar el núcleo vendoreado en un repo nuevo — bloqueada por #3 |
+
+La skill **issues-estructure** es personal y global: enseña el contrato en `issues/CONTRATO.md`, exige `issues/orden-de-trabajo.md` en proyectos con pr-loop, y avisa en épicos sin descomponer. El contrato y la plantilla viven en el repo canónico; cada proyecto los adopta vía `install` o copia manual.
+
+Crear un issue siguiendo el contrato:
+
+```bash
+gh issue create --title "feat: …" --body-file issues/TEMPLATE.md
+```
 
 ---
 
