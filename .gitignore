@@ -1,0 +1,4 @@
+progress/
+.worktrees/
+*.raw.json
+.pr-loop-claude-review.json

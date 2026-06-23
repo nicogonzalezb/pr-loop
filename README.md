@@ -1,0 +1,170 @@
+# pr-loop
+
+Pipeline PR multi-agente, 100% terminal. Encadena tres CLIs nativos (Cursor, Claude Code, Codex) para llevar un issue desde la implementación hasta un PR listo para que un humano decida el merge.
+
+```
+agent -p (Composer 2.5)  → implement
+gh pr create / push      → PR
+claude -p (Opus)         → review profunda (read-only, JSON)
+agent -p (Composer 2.5)  → fix según review (máx. 2 loops)
+codex exec review        → segunda review (read-only, markdown)
+gate                     → comentario en PR + recomendación merge
+```
+
+El pipeline **nunca** mergea solo. El merge lo hace un humano.
+
+---
+
+## Uso
+
+```bash
+bash pr-loop.sh issue-35              # loop completo desde un issue
+bash pr-loop.sh --pr 57              # sobre un PR existente
+bash pr-loop.sh --pr 57 --from review-claude   # reanudar una fase
+bash pr-loop.sh issue-35 --dry-run   # ver el plan sin gastar tokens
+bash pr-loop.sh issue-50 --force     # ignorar warning de orden
+bash pr-loop.sh issue-35 --max-fix 0 # solo reviews, sin fix
+```
+
+Fases (`--from`): `worktree | implement | pr | review-claude | fix | review-codex | gate`.
+
+---
+
+## Estructura
+
+```
+pr-loop/
+├── pr-loop.sh          # orquestador principal
+├── scripts/
+│   ├── state.sh         # estado en progress/current.json
+│   ├── check_order.sh   # warning de orden de issues (opcional)
+│   ├── render_prompt.sh # sustituye {{ISSUE}}/{{PR}}/{{SESSION}}/{{REVIEWS}}
+│   ├── cursor_implement.sh
+│   ├── claude_review.sh
+│   ├── codex_review.sh
+│   └── gate_merge.sh
+├── prompts/
+│   ├── implement-issue.md
+│   ├── fix-from-reviews.md
+│   ├── review-claude.md
+│   └── review-codex.md
+└── progress/            # reviews y estado (gitignore recomendado)
+```
+
+---
+
+## Setup
+
+```bash
+# 1. Cursor CLI
+curl https://cursor.com/install -fsS | bash
+agent login
+
+# 2. Claude Code
+claude --version   # login previo: claude
+
+# 3. Codex CLI
+curl -fsSL https://codex.openai.com/install.sh | sh
+codex login
+
+# 4. GitHub CLI
+gh auth status
+
+# 5. jq
+brew install jq
+```
+
+Smoke test barato:
+
+```bash
+agent  -p "di hola" --model composer-2.5
+claude -p "di hola" --model haiku --output-format json | jq -r '.result'
+codex exec review --base main "smoke test" -o /tmp/codex-smoke.md
+```
+
+---
+
+## Adaptar a tu proyecto
+
+El pipeline es agnóstico: no asume stack, lenguaje ni estructura de tests. Para adaptarlo:
+
+### 1. Prompts de implement y fix
+
+Edita `prompts/implement-issue.md` y `prompts/fix-from-reviews.md` para añadir:
+- Reglas de convenciones de tu proyecto
+- Comandos específicos de test (`uv run pytest`, `npm test`, etc.)
+- Zonas de código protegidas
+
+### 2. Health check (opcional)
+
+Si tu proyecto tiene un script de inicialización (p.ej. `init.sh`):
+
+```bash
+export INIT_SCRIPT=./init.sh
+bash pr-loop.sh issue-35
+```
+
+### 3. Creación de worktree (opcional)
+
+Si tienes tu propio script de worktree (p.ej. `wt.sh`):
+
+```bash
+export WORKTREE_SCRIPT=./wt.sh
+bash pr-loop.sh issue-35
+```
+
+Sin `WORKTREE_SCRIPT`, el pipeline usa `git worktree add` directamente.
+
+### 4. Herramientas permitidas al reviewer Claude
+
+Por defecto el reviewer solo puede leer. Si tus tests requieren comandos específicos:
+
+```bash
+export CLAUDE_ALLOWED_TOOLS="Read,Grep,Write,Bash(gh *),Bash(npm test),Bash(cat *),Bash(ls *)"
+```
+
+### 5. Review de Claude — criterios de dominio
+
+Edita `prompts/review-claude.md` para añadir criterios específicos de tu proyecto (p.ej. patrones de seguridad, invariantes de negocio, contratos de API).
+
+### 6. Orden de issues (opcional)
+
+Si tienes un `issues/orden-de-trabajo.md` con la secuencia planificada, `check_order.sh` lo detecta automáticamente. Si no existe el archivo, el chequeo se omite sin error.
+
+---
+
+## Variables de entorno
+
+| Variable | Efecto |
+|----------|--------|
+| `INIT_SCRIPT` | Script de health check a correr antes de cada agente (path absoluto o relativo al repo) |
+| `WORKTREE_SCRIPT` | Script personalizado de creación de worktree |
+| `PR_BASE_BRANCH` | Rama base del PR y diff Codex (default: `main`) |
+| `CURSOR_MODEL` | Modelo de implement/fix (default: `composer-2.5`) |
+| `CLAUDE_MODEL` | Modelo de review Claude (default: `opus`) |
+| `CLAUDE_ALLOWED_TOOLS` | Herramientas permitidas al reviewer Claude |
+| `PROMPTS_DIR` | Ruta a los prompts (default: `./prompts`) |
+| `ORDER_FILE` | Documento de orden de issues (default: `./issues/orden-de-trabajo.md`) |
+| `PR_LOOP_DRY_RUN` | Si es `"1"`, equivale a `--dry-run` |
+| `SESSION_ID` | ID de sesión (default: timestamp UTC) |
+
+---
+
+## Billing — leer antes de usar (cambio del 15 jun 2026)
+
+Desde el **15 de junio de 2026**, `claude -p` consume un **crédito mensual Agent SDK** separado del uso interactivo, facturado a tarifas API.
+
+| Plan Claude | Crédito Agent SDK / mes |
+|-------------|-------------------------|
+| Pro | $20 |
+| Max 5x | $100 |
+| Max 20x | $200 |
+
+- **Requiere opt-in**: activarlo una vez en los ajustes de la cuenta de Claude. Sin opt-in, `claude -p` **falla**.
+- **Sin rollover**: lo que no uses en el mes se pierde.
+- **El interactivo no cambia**: `claude` (sin `-p`) sigue usando los límites normales.
+
+Para estirar el crédito:
+- Usar `--max-fix 0` para omitir la fase de fix.
+- Bajar el modelo: `CLAUDE_MODEL=sonnet bash pr-loop.sh ...`
+- Para reviews puntuales de alta calidad, lanzarlas interactivas (sin `-p`).
