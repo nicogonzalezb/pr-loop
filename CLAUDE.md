@@ -59,6 +59,8 @@ worktree → implement → pr → review-claude → fix → review-codex → gat
 | `prompts/` | Prompts versionados con placeholders |
 | `init.sh` | Health check del proyecto (sourced vía `INIT_SCRIPT`) |
 | `.pr-loop.env` | Config del proyecto sourced por `pr-loop.sh` (modelos, rama base, `INIT_SCRIPT`) |
+| `issues/CONTRATO.md` | Spec del formato de issues (fuente de verdad) |
+| `issues/TEMPLATE.md` | Plantilla para `gh issue create` |
 | `issues/orden-de-trabajo.md` | Orden y bloqueos de issues para automejora |
 | `progress/`, `.worktrees/` | Estado/artefactos y worktrees por issue (no versionar) |
 
@@ -82,6 +84,7 @@ bash pr-loop.sh issue-1 --dry-run   # debe pasar preflight
 
 ## Issues y ramas
 
+- Formato: `issues/CONTRATO.md` + `issues/TEMPLATE.md`. Skill global `issues-estructure` en `~/.cursor/skills/`.
 - Rama de trabajo: `issue-N` (ej. `issue-2`).
 - El PR debe incluir `Closes #N` en el body.
 - Respeta `issues/orden-de-trabajo.md`: issues marcados ⛔ bloqueados no se implementan hasta desbloquearse.

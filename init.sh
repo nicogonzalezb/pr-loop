@@ -46,7 +46,7 @@ else
 fi
 
 # 5. Archivos clave del dogfooding
-for f in CLAUDE.md issues/orden-de-trabajo.md; do
+for f in CLAUDE.md issues/CONTRATO.md issues/TEMPLATE.md issues/orden-de-trabajo.md; do
   [ -f "$REPO_ROOT/$f" ] && ok "$f existe" || fail "$f falta"
 done
 
