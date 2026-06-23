@@ -53,6 +53,9 @@ bash pr-loop.sh --pr 57 --from review-claude   # reanudar una fase
 bash pr-loop.sh issue-35 --dry-run   # ver el plan sin gastar tokens
 bash pr-loop.sh issue-50 --force     # ignorar warning de orden
 bash pr-loop.sh issue-35 --max-fix 0 # solo reviews, sin fix
+bash pr-loop.sh cleanup list         # listar worktrees locales
+bash pr-loop.sh cleanup issue-35 --yes   # eliminar worktree tras merge
+bash pr-loop.sh cleanup --all --yes --progress  # limpiar todo + progress/
 ```
 
 Fases (`--from`): `worktree | implement | pr | review-claude | fix | review-codex | gate`.
@@ -71,7 +74,8 @@ pr-loop/
 │   ├── cursor_implement.sh
 │   ├── claude_review.sh
 │   ├── codex_review.sh
-│   └── gate_merge.sh
+│   ├── gate_merge.sh
+│   └── cleanup.sh
 ├── prompts/
 │   ├── implement-issue.md
 │   ├── fix-from-reviews.md
@@ -155,14 +159,32 @@ bash pr-loop.sh issue-35
 
 Cada corrida crea un **git worktree** en `.worktrees/issue-N` con rama `issue-N`. No se soportan scripts alternativos (`WORKTREE_SCRIPT` fue eliminado).
 
-Tras mergear un PR, limpia el worktree huérfano:
+#### Limpieza tras merge humano
+
+Cuando un humano mergea el PR en GitHub, el worktree local y los artefactos de `progress/` quedan huérfanos. Usa el comando de cleanup:
 
 ```bash
-git worktree remove .worktrees/issue-N
-git worktree prune
+# Ver worktrees y si tienen cambios sin commitear
+bash pr-loop.sh cleanup list
+
+# Tras mergear issue-35 en GitHub:
+bash pr-loop.sh cleanup issue-35 --yes
+
+# También borrar logs y sesión activa en progress/ para ese issue
+bash pr-loop.sh cleanup issue-35 --yes --progress
+
+# Limpieza masiva (p. ej. fin de sprint de dogfooding)
+bash pr-loop.sh cleanup --all --yes --progress
 ```
 
-(Ver issue #10 para un comando `cleanup` automatizado.)
+Comportamiento de seguridad:
+
+- Worktrees **con cambios sin commitear** se rechazan salvo `--force`.
+- No se puede eliminar el worktree desde el que estás ejecutando el comando.
+- Al final corre `git worktree prune` para mantener `git worktree list` consistente.
+- **No borra ramas remotas** ni hace merge del PR.
+
+Equivalente directo: `bash scripts/cleanup.sh list|issue-N|--all [flags]`.
 
 ### 4. Herramientas permitidas al reviewer Claude
 
