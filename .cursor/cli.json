@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Shell(bash)",
+      "Shell(git)",
+      "Shell(gh)",
+      "Shell(cat)",
+      "Shell(chmod)",
+      "Shell(find)",
+      "Shell(mkdir)",
+      "Shell(shellcheck)",
+      "Read(**)",
+      "Write(**)"
+    ],
+    "deny": [
+      "Shell(rm)",
+      "Shell(sudo)",
+      "Shell(dd)",
+      "Shell(curl)",
+      "Shell(wget)",
+      "Read(.env*)",
+      "Read(**/.env*)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Write(**/.env*)",
+      "Write(**/*.key)",
+      "Write(**/*.pem)"
+    ]
+  }
+}
