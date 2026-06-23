@@ -29,3 +29,13 @@
 - **Formato**: sección `## SESSION — issue-N` + tabla markdown por corrida (legible en terminal y en editores).
 - **Fases**: solo las del array `PHASES` que efectivamente corrieron; `phase_order` no se cuenta como fase de pipeline.
 - **Gate no ejecutado**: si `--from` omite la fase gate, el veredicto queda como `(gate no ejecutado)`.
+
+## Correcciones tras review
+
+**Review Claude** (`20260623T202602-claude-review.json`): veredicto `approve-with-changes`, **0 bloqueantes**.
+
+| Punto review | Acción |
+|--------------|--------|
+| Sin trap EXIT: fallos tempranos no registraban historial | **Implementado**: `trap finalize_run_history EXIT` tras `state_init`, con guarda `HISTORY_APPENDED` para evitar doble escritura. |
+| Gate muestra `(exit 0)` cuando no se ejecutó | **Implementado**: `HISTORY_GATE_RC` solo se exporta si `GATE_RAN=1`. |
+| `record_phase fix` con `--max-fix=0` lista fase no-op | **Sin cambio**: la celda `Fix loop: omitido (--max-fix=0)` ya lo aclara; impacto cosmético menor. |
