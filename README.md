@@ -77,6 +77,7 @@ pr-loop/
 │   ├── fix-from-reviews.md
 │   ├── review-claude.md
 │   └── review-codex.md
+├── prompts-local/       # overlay opcional (pisa prompts/ por archivo)
 └── progress/            # reviews y estado (gitignore recomendado)
     .worktrees/          # git worktree por issue (gitignore obligatorio)
 ```
@@ -141,6 +142,8 @@ Edita `prompts/implement-issue.md` y `prompts/fix-from-reviews.md` para añadir:
 - Reglas de convenciones de tu proyecto
 - Comandos específicos de test (`uv run pytest`, `npm test`, etc.)
 - Zonas de código protegidas
+
+**Overlay local (recomendado para dogfooding):** en lugar de editar el núcleo, coloca overrides en `prompts-local/`. Si existe `prompts-local/<archivo>.md`, `render_prompt.sh` lo usa en lugar de `prompts/<archivo>.md`. Configurable con `PROMPTS_LOCAL_DIR` en `.pr-loop.env`.
 
 ### 2. Health check (opcional)
 
@@ -208,7 +211,8 @@ gh issue create --title "feat: …" --body-file issues/TEMPLATE.md
 | `CURSOR_MODEL` | Modelo de implement/fix (default: `composer-2.5`) |
 | `CLAUDE_MODEL` | Modelo de review Claude (default: `opus`) |
 | `CLAUDE_ALLOWED_TOOLS` | Herramientas permitidas al reviewer Claude |
-| `PROMPTS_DIR` | Ruta a los prompts (default: `./prompts`) |
+| `PROMPTS_DIR` | Ruta a los prompts base del núcleo (default: `./prompts`) |
+| `PROMPTS_LOCAL_DIR` | Ruta al overlay local (default: `./prompts-local`); pisa `PROMPTS_DIR` por archivo |
 | `ORDER_FILE` | Documento de orden de issues (default: `./issues/orden-de-trabajo.md`) |
 | `PR_LOOP_DRY_RUN` | Si es `"1"`, equivale a `--dry-run` |
 | `SESSION_ID` | ID de sesión (default: timestamp UTC) |
