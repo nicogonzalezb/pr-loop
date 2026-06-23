@@ -440,7 +440,11 @@ append_run_history() {
   export HISTORY_BLOQUEANTES="$bloqueantes"
   export HISTORY_FIX_STATUS="$fix_status"
   export HISTORY_GATE_VERDICT="$gate_verdict"
-  export HISTORY_GATE_RC="${GATE_RC:-}"
+  if [ "${GATE_RAN:-0}" = "1" ]; then
+    export HISTORY_GATE_RC="${GATE_RC:-}"
+  else
+    unset HISTORY_GATE_RC
+  fi
   unset HISTORY_GASTO
 
   state_append_history
