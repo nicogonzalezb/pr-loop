@@ -50,7 +50,9 @@ if [ -f "$REPO_ROOT/.pr-loop.env" ]; then
   set +a
 fi
 
-export REPO_ROOT PROMPTS_DIR="${PROMPTS_DIR:-$REPO_ROOT/prompts}"
+export REPO_ROOT \
+  PROMPTS_DIR="${PROMPTS_DIR:-$REPO_ROOT/prompts}" \
+  PROMPTS_LOCAL_DIR="${PROMPTS_LOCAL_DIR:-$REPO_ROOT/prompts-local}"
 
 source "$SCRIPTS_DIR/state.sh"
 source "$SCRIPTS_DIR/check_order.sh"
