@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "epic": 99,
+  "atomic": false,
+  "atomic_reason": "",
+  "assumptions": ["Supuesto global de prueba"],
+  "sub_issues": [
+    {
+      "title": "feat: sub-issue de prueba A",
+      "body": "## Contexto\n\nContexto de prueba.\n\n## Qué falta / alcance\n\n- **Entra:**\n  - Cambio A\n- **No entra:**\n  - Cambio B\n\n## Criterios de aceptación\n\n- [ ] Criterio verificable A\n",
+      "assumptions": ["Supuesto local A"]
+    },
+    {
+      "title": "fix: sub-issue de prueba B",
+      "body": "## Contexto\n\nOtro contexto.\n\n## Qué falta / alcance\n\n- **Entra:**\n  - Cambio C\n- **No entra:**\n  - Cambio D\n\n## Criterios de aceptación\n\n- [ ] Criterio verificable B\n",
+      "assumptions": []
+    }
+  ]
+}

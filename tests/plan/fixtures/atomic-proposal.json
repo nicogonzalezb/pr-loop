@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "epic": 42,
+  "atomic": true,
+  "atomic_reason": "Issue ya define Entra/No entra y criterios verificables en un solo ciclo.",
+  "assumptions": [],
+  "sub_issues": []
+}
