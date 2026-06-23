@@ -15,6 +15,29 @@ El pipeline **nunca** mergea solo. El merge lo hace un humano.
 
 ---
 
+## Outer loop / planner (`plan-loop.sh`)
+
+Descompone issues **épicos** en issues **atómicos** antes del inner loop. Human-gated: no crea nada sin tu OK.
+
+```
+claude -p (sonnet)  → propone sub-issues (JSON)
+humano              → aprueba / rechaza / re-propone
+gh issue create     → emite issues con formato issues/CONTRATO.md
+```
+
+```bash
+bash plan-loop.sh 5 --dry-run              # preflight sin agente
+bash plan-loop.sh 5                        # propuesta interactiva + creación
+bash plan-loop.sh 5 --arch-doc CLAUDE.md   # doc de arquitectura explícito
+bash plan-loop.sh 5 --proposal progress/…-plan-proposal.json  # reutilizar propuesta
+```
+
+Doc de arquitectura (en orden): `--arch-doc` → `PLAN_ARCH_DOC` → `ARCHITECTURE.md` → `CLAUDE.md`. Si falta, degrada con aviso.
+
+Sad paths: issue ya atómico → no descompone; rechazo humano → no crea; épico ambiguo → supuestos en `assumptions`.
+
+---
+
 ## Dogfooding (automejora en este repo)
 
 Este repositorio puede ejecutar el pipeline sobre sus propios issues abiertos. La capa mínima ya está en la raíz:
@@ -63,8 +86,12 @@ Fases (`--from`): `worktree | implement | pr | review-claude | fix | review-code
 
 ```
 pr-loop/
-├── pr-loop.sh          # orquestador principal
+├── plan-loop.sh        # outer loop / planner
+├── pr-loop.sh          # orquestador inner loop
 ├── scripts/
+│   ├── plan_propose.sh  # propuesta vía claude -p
+│   ├── plan_validate.sh # valida JSON de propuesta
+│   ├── plan_create.sh   # gh issue create (post-aprobación)
 │   ├── state.sh         # estado en progress/current.json
 │   ├── check_order.sh   # warning de orden de issues (opcional)
 │   ├── render_prompt.sh # sustituye {{ISSUE}}/{{PR}}/{{SESSION}}/{{REVIEWS}}
@@ -73,10 +100,12 @@ pr-loop/
 │   ├── codex_review.sh
 │   └── gate_merge.sh
 ├── prompts/
+│   ├── decompose-epic.md
 │   ├── implement-issue.md
 │   ├── fix-from-reviews.md
 │   ├── review-claude.md
 │   └── review-codex.md
+├── tests/plan/          # tests de validación del outer loop
 └── progress/            # reviews y estado (gitignore recomendado)
     .worktrees/          # git worktree por issue (gitignore obligatorio)
 ```
@@ -212,6 +241,9 @@ gh issue create --title "feat: …" --body-file issues/TEMPLATE.md
 | `ORDER_FILE` | Documento de orden de issues (default: `./issues/orden-de-trabajo.md`) |
 | `PR_LOOP_DRY_RUN` | Si es `"1"`, equivale a `--dry-run` |
 | `SESSION_ID` | ID de sesión (default: timestamp UTC) |
+| `PLAN_ARCH_DOC` | Doc de arquitectura para `plan-loop.sh` (default: `ARCHITECTURE.md` → `CLAUDE.md`) |
+| `PLAN_MODEL` | Modelo del planner (default: `sonnet`) |
+| `PLANNER_ALLOWED_TOOLS` | Herramientas permitidas al planner (default: `Read,Write,Bash(gh *)`) |
 
 ---
 
