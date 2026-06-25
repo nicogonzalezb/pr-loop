@@ -52,6 +52,7 @@ INIT_SCRIPT=./init.sh
 PR_BASE_BRANCH=main
 CURSOR_MODEL=composer-2.5
 CLAUDE_MODEL=opus
+# PROMPTS_LOCAL_DIR=./prompts-local  # overlay de prompts (default: $REPO_ROOT/prompts-local)
 EOF
   ok ".pr-loop.env creado (ajusta INIT_SCRIPT y modelos)"
 fi

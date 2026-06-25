@@ -62,6 +62,33 @@ else
   fail ".worktrees/ — corre: bash pr-loop.sh install"
 fi
 
+# 7. Overlay prompts-local (local pisa base; fallback si no hay local)
+_overlay_tmp="$(mktemp -d)"
+_overlay_base="$_overlay_tmp/prompts"
+_overlay_local="$_overlay_tmp/prompts-local"
+mkdir -p "$_overlay_base" "$_overlay_local"
+echo "BASE_MARKER" > "$_overlay_base/overlay-test.md"
+echo "LOCAL_MARKER" > "$_overlay_local/overlay-test.md"
+if _overlay_out="$(
+  REPO_ROOT="$_overlay_tmp" \
+  PROMPTS_DIR="$_overlay_base" \
+  PROMPTS_LOCAL_DIR="$_overlay_local" \
+  bash "$REPO_ROOT/scripts/render_prompt.sh" overlay-test.md 2>/dev/null
+)" && [ "$_overlay_out" = "LOCAL_MARKER" ]; then
+  ok "render_prompt overlay (local pisa base)"
+else
+  fail "render_prompt overlay — esperaba LOCAL_MARKER"
+fi
+rm -rf "$_overlay_tmp"
+if _fallback_out="$(
+  PROMPTS_LOCAL_DIR="/nonexistent/prompts-local" \
+  bash "$REPO_ROOT/scripts/render_prompt.sh" implement-issue.md 2>/dev/null | head -c 20
+)" && [ -n "$_fallback_out" ]; then
+  ok "render_prompt fallback (sin prompts-local)"
+else
+  fail "render_prompt fallback — no resolvió prompt base"
+fi
+
 echo ""
 if [ "$FAILED" -eq 0 ]; then
   ok "Entorno listo"
