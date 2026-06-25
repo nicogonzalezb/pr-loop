@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Mock mínimo de `gh` para tests de resolve_targets (sin tokens ni red).
+set -euo pipefail
+
+if [[ "${1:-}" != "pr" || "${2:-}" != "view" ]]; then
+  echo "mock gh: comando no soportado: $*" >&2
+  exit 1
+fi
+
+shift 2
+pr_num="$1"
+shift
+
+json_fields=""
+query=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --json) json_fields="$2"; shift 2 ;;
+    -q) query="$2"; shift 2 ;;
+    *) shift ;;
+  esac
+done
+
+if [[ "$json_fields" == "headRefName" ]]; then
+  echo "${MOCK_GH_HEAD_REF:-}"
+  exit 0
+fi
+
+if [[ "$json_fields" == "body,title" ]]; then
+  printf '%s\n%s' "${MOCK_GH_BODY:-}" "${MOCK_GH_TITLE:-}"
+  exit 0
+fi
+
+echo "mock gh: --json no soportado: $json_fields" >&2
+exit 1

@@ -40,6 +40,17 @@ bash pr-loop.sh issue-2 --dry-run   # plan sin gastar tokens
 bash pr-loop.sh issue-2             # ciclo completo → PR en GitHub
 ```
 
+### Tests (bats)
+
+Suite de tests unitarios para scripts del pipeline (`state.sh`, `render_prompt.sh`, `check_order.sh`, `resolve_targets`):
+
+```bash
+brew install bats-core   # macOS; en Linux: paquete bats del distro
+bats tests/              # o: ./init.sh (corre bats si está instalado)
+```
+
+No requiere tokens ni CLIs de agentes (`agent`, `claude`, `codex`).
+
 Cada corrida: rama `issue-N` → worktree `.worktrees/issue-N` → reviews en `progress/`.
 
 ---

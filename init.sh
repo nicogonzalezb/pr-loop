@@ -62,6 +62,17 @@ else
   fail ".worktrees/ — corre: bash pr-loop.sh install"
 fi
 
+# 7. Suite bats (opcional — requiere bats-core)
+if command -v bats &>/dev/null; then
+  if bats "$REPO_ROOT/tests"; then
+    ok "bats tests/"
+  else
+    fail "bats tests/"
+  fi
+else
+  echo "  (bats no instalado — omitido; brew install bats-core)"
+fi
+
 echo ""
 if [ "$FAILED" -eq 0 ]; then
   ok "Entorno listo"
