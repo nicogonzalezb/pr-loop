@@ -22,6 +22,7 @@ Este repositorio puede ejecutar el pipeline sobre sus propios issues abiertos. L
 | Archivo | Rol |
 |---------|-----|
 | `.pr-loop.env` | `INIT_SCRIPT`, modelos, rama base (sourced por `pr-loop.sh`) |
+| `.cursor/cli.json` | Permisos del agente Cursor en modo headless (`agent -p --force`); prerequisito para fases implement y fix sin prompts interactivos |
 | `init.sh` | Smoke tests: sintaxis bash, dry-run, archivos clave |
 | `CLAUDE.md` | Convenciones para implementador y reviewer |
 | `issues/CONTRATO.md` | Spec del formato de issues |
@@ -39,6 +40,8 @@ Este repositorio puede ejecutar el pipeline sobre sus propios issues abiertos. L
 bash pr-loop.sh issue-2 --dry-run   # plan sin gastar tokens
 bash pr-loop.sh issue-2             # ciclo completo → PR en GitHub
 ```
+
+**Headless (sin prompts de permisos):** las fases implement y fix invocan `agent -p --force` dentro del worktree. Sin `.cursor/cli.json` en la raíz del repo, el agente puede pedir aprobación interactiva al ejecutar `bash`/`git`/`gh` o escribir archivos. El archivo versionado en este repo declara permisos mínimos para dogfooding (shell acotado, lectura/escritura del proyecto). Repos consumidores configuran el suyo en el bootstrap (#4).
 
 Cada corrida: rama `issue-N` → worktree `.worktrees/issue-N` → reviews en `progress/`.
 
