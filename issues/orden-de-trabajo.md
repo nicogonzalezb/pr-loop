@@ -16,6 +16,7 @@ Piezas que faltaban para usar este repo como target del inner loop. Ver issue #1
 
 | Orden | Issue | Título | Notas |
 |-------|-------|--------|-------|
+| 0 | #16 | `check_order`: falso positivo «bloqueado por #N» | Surgió de #14; evita `--force` cuando el issue solo se menciona en otra fila |
 | 0 | #13 | Formalizar capa base (CLAUDE.md, init.sh, …) | Merge del PR pendiente |
 | — | #6 | `.cursor/cli.json` headless | Prerequisito para corridas reales sin prompts |
 | — | #7 | CI GitHub Actions (`init.sh`) | Verde en PRs de dogfooding |

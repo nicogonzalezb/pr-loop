@@ -15,6 +15,33 @@ set -euo pipefail
 : "${REPO_ROOT:=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 ORDER_FILE="${ORDER_FILE:-$REPO_ROOT/issues/orden-de-trabajo.md}"
 
+# Fila de tabla donde #N es el issue principal (columna Issue), no una mención en notas.
+_is_primary_issue_row() {
+  local line="$1"
+  local issue_num="$2"
+
+  [[ "$line" == \|* ]] || return 1
+  [[ "$line" =~ ^\|[[:space:]]*- ]] && return 1
+
+  local col1 col2
+  col1="$(echo "$line" | awk -F'|' 'NF > 1 { print $2; exit }' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+  col2="$(echo "$line" | awk -F'|' 'NF > 2 { print $3; exit }' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+
+  echo "$col1" | grep -qE "^(\*\*)?#${issue_num}\b" && return 0
+  echo "$col2" | grep -qE "^(\*\*)?#${issue_num}\b" && return 0
+  return 1
+}
+
+_primary_issue_lines() {
+  local issue_num="$1"
+  grep -nE "#${issue_num}\b" "$ORDER_FILE" | while IFS= read -r entry; do
+    local line_content="${entry#*:}"
+    if _is_primary_issue_row "$line_content" "$issue_num"; then
+      echo "$entry"
+    fi
+  done
+}
+
 check_order() {
   local issue_num="$1"
 
@@ -30,9 +57,13 @@ check_order() {
   fi
 
   local ctx
-  ctx="$(grep -nE "#${issue_num}\b" "$ORDER_FILE" | head -n 3 || true)"
+  ctx="$(_primary_issue_lines "$issue_num" | head -n 3 || true)"
   echo "  Contexto en $(basename "$ORDER_FILE"):"
-  echo "$ctx" | sed 's/^/    /'
+  if [ -n "$ctx" ]; then
+    echo "$ctx" | sed 's/^/    /'
+  else
+    echo "    (sin fila de tabla para #${issue_num})"
+  fi
 
   if echo "$ctx" | grep -qiE "bloquead|⛔|blocked"; then
     echo "  ⚠ Issue #${issue_num} parece estar BLOQUEADO según el documento."
