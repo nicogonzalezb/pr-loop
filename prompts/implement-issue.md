@@ -19,7 +19,7 @@ Eres el agente implementador. Trabajas dentro de un worktree aislado. Tu objetiv
 ## Al terminar
 
 1. Corre los tests y verificaciones del área tocada.
-2. Crea `changelogs/issue-{{ISSUE}}.md` con: qué se implementó, archivos modificados, tests añadidos, decisiones relevantes.
+2. Crea `changelogs/issue-{{ISSUE}}.md` copiando `changelogs/TEMPLATE.md` y completando: qué se implementó, archivos modificados, tests añadidos, decisiones relevantes (ver `CLAUDE.md` → Changelogs por issue).
 3. Haz commits con conventional commits (`feat: ...`, `fix: ...`, etc.). Un commit por unidad lógica.
 
 NO abras el PR — eso lo hace el orquestador. NO mergees nada.

@@ -27,6 +27,7 @@ Este repositorio puede ejecutar el pipeline sobre sus propios issues abiertos. L
 | `issues/CONTRATO.md` | Spec del formato de issues |
 | `issues/TEMPLATE.md` | Plantilla para `gh issue create` |
 | `issues/orden-de-trabajo.md` | Orden recomendado y bloqueos (#3, #4) |
+| `changelogs/TEMPLATE.md` | Plantilla para `changelogs/issue-N.md` (implement + fix) |
 
 **Orden sugerido** (ver el doc para detalle):
 

@@ -62,6 +62,7 @@ worktree → implement → pr → review-claude → fix → review-codex → gat
 | `issues/CONTRATO.md` | Spec del formato de issues (fuente de verdad) |
 | `issues/TEMPLATE.md` | Plantilla para `gh issue create` |
 | `issues/orden-de-trabajo.md` | Orden y bloqueos de issues para automejora |
+| `changelogs/TEMPLATE.md` | Plantilla para `changelogs/issue-N.md` (implement + fix) |
 | `progress/`, `.worktrees/` | Estado/artefactos y worktrees por issue (no versionar) |
 
 ## Convenciones de código
@@ -81,6 +82,15 @@ bash pr-loop.sh issue-1 --dry-run   # debe pasar preflight
 ```
 
 `init.sh` ya corre `bash -n` y `shellcheck -x` (si está instalado) sobre los scripts; si tocas un script, basta con que `./init.sh` pase.
+
+## Changelogs por issue
+
+Cada corrida de implementación o fix debe dejar rastro en `changelogs/issue-N.md`:
+
+1. **Implement** (`prompts/implement-issue.md`): copiar `changelogs/TEMPLATE.md` y completar las secciones *Qué se implementó*, *Archivos modificados*, *Tests añadidos* y *Decisiones relevantes*.
+2. **Fix** (`prompts/fix-from-reviews.md`): añadir o actualizar la sección *Correcciones tras review* (bloqueantes atendidos, rechazados con motivo, verificaciones).
+
+El orquestador **no** genera el changelog automáticamente; es responsabilidad del agente implementador.
 
 ## Issues y ramas
 

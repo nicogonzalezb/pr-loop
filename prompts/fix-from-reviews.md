@@ -40,7 +40,7 @@ También puede existir una review de Codex en `progress/{{SESSION}}-codex-review
 ## Al terminar
 
 1. Corre los tests y verificaciones del área tocada.
-2. Actualiza `changelogs/issue-{{ISSUE}}.md` con una sección "Correcciones tras review".
+2. Actualiza `changelogs/issue-{{ISSUE}}.md` con la sección "Correcciones tras review" (formato en `changelogs/TEMPLATE.md`; ver `CLAUDE.md` → Changelogs por issue).
 3. Commits con conventional commits. Un commit por corrección lógica.
 
 NO mergees. NO abras PR nuevo — el cambio va sobre la rama actual.
